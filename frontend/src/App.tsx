@@ -1,55 +1,39 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { createTheme } from '@mui/material/styles';
-import { Layout } from './components/Layout';
-import { Home } from './pages/Home';
-import { Dashboard } from './pages/Dashboard';
-import { Connections } from './pages/Connections';
-import { Reports } from './pages/Reports';
-import { AuthProvider } from './contexts/AuthContext';
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
+import UserManagement from './pages/admin/UserManagement';
+import Unauthorized from './pages/Unauthorized';
+import PrivateRoute from './components/PrivateRoute';
 
-// Create a theme instance
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
-
-function App() {
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
+const App: React.FC = () => {
+    return (
         <Router>
-          <Layout>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/connections" element={<Connections />} />
-              <Route path="/reports" element={<Reports />} />
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
+
+                {/* Protected routes */}
+                <Route
+                    path="/admin/users"
+                    element={
+                        <PrivateRoute requiredRole="Admin">
+                            <UserManagement />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Redirect root to login */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
-          </Layout>
         </Router>
-      </AuthProvider>
-    </ThemeProvider>
-  );
-}
+    );
+};
 
 export default App;
