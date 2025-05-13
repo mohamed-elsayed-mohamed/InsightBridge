@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "nCdAiIlPOn5mlouQXQhqTZPeikxpjGDJ5gLfLN9kjxE=",
+  "Source": "InsightBridge.API",
+  "BasePath": "_content/InsightBridge.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

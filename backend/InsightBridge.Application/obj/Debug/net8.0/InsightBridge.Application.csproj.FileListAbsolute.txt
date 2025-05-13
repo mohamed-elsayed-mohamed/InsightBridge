@@ -1,0 +1,15 @@
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\bin\Debug\net8.0\InsightBridge.Application.deps.json
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\bin\Debug\net8.0\InsightBridge.Application.dll
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\bin\Debug\net8.0\InsightBridge.Application.pdb
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\bin\Debug\net8.0\InsightBridge.Domain.dll
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\bin\Debug\net8.0\InsightBridge.Domain.pdb
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\InsightBridge.Application.csproj.AssemblyReference.cache
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\InsightBridge.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\InsightBridge.Application.AssemblyInfoInputs.cache
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\InsightBridge.Application.AssemblyInfo.cs
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\InsightBridge.Application.csproj.CoreCompileInputs.cache
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\InsightB.BD24F707.Up2Date
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\InsightBridge.Application.dll
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\refint\InsightBridge.Application.dll
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\InsightBridge.Application.pdb
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Application\obj\Debug\net8.0\ref\InsightBridge.Application.dll

@@ -1,0 +1,12 @@
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\InsightBridge.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\InsightBridge.Domain.AssemblyInfoInputs.cache
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\InsightBridge.Domain.AssemblyInfo.cs
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\InsightBridge.Domain.csproj.CoreCompileInputs.cache
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\bin\Debug\net8.0\InsightBridge.Domain.deps.json
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\bin\Debug\net8.0\InsightBridge.Domain.dll
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\bin\Debug\net8.0\InsightBridge.Domain.pdb
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\InsightBridge.Domain.dll
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\refint\InsightBridge.Domain.dll
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\InsightBridge.Domain.pdb
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\ref\InsightBridge.Domain.dll
+C:\Users\m.elsayed\Desktop\Insight Bridge\backend\InsightBridge.Domain\obj\Debug\net8.0\InsightBridge.Domain.csproj.AssemblyReference.cache
