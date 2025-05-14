@@ -15,6 +15,13 @@ using InsightBridge.Application;
 using InsightBridge.Infrastructure;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.DependencyInjection;
+using System.IO;
+using Microsoft.Data.SqlClient;
+using InsightBridge.Application.AI.Interfaces;
+using InsightBridge.Application.AI.Services;
+using Microsoft.Bot.Builder.Integration.AspNet.Core;
+using Microsoft.Bot.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -122,6 +129,9 @@ builder.Services.AddScoped<IDatabaseConnectionService, DatabaseConnectionService
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<InsightBridge.Application.Services.IAuthService, InsightBridge.Application.Services.AuthService>();
 
+// Add AI services
+builder.Services.AddScoped<IAIQueryService, AIQueryService>();
+
 // Configure CORS
 builder.Services.AddCors(options =>
 {
@@ -136,6 +146,13 @@ builder.Services.AddApplicationServices();
 
 // Add Infrastructure Services
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// Add ScheduledReportService as a hosted service
+builder.Services.AddHostedService<InsightBridge.Infrastructure.Services.ScheduledReportService>();
+
+// Add Bot Framework adapter and TeamsSqlBot
+builder.Services.AddSingleton<IBotFrameworkHttpAdapter, BotFrameworkHttpAdapter>();
+builder.Services.AddSingleton<IBot, TeamsSqlBot>();
 
 var app = builder.Build();
 
@@ -159,6 +176,60 @@ app.UseAuthorization();
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.MapControllers();
+
+// Initialize the test database if it doesn't exist
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<ApplicationDbContext>();
+    
+    // Create TestDatabase if it doesn't exist
+    var testDbConnectionString = builder.Configuration.GetConnectionString("TestDatabaseConnection");
+    var masterConnectionString = testDbConnectionString.Replace("Database=TestAIDatabase", "Database=master");
+    
+    using (var connection = new SqlConnection(masterConnectionString))
+    {
+        connection.Open();
+        using (var command = new SqlCommand())
+        {
+            command.Connection = connection;
+            command.CommandText = @"
+                IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TestAIDatabase')
+                BEGIN
+                    CREATE DATABASE TestAIDatabase;
+                END";
+            command.ExecuteNonQuery();
+        }
+    }
+
+    // Execute the test database initialization script
+    //using (var connection = new SqlConnection(testDbConnectionString))
+    //{
+    //    connection.Open();
+    //    var sqlScript = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestDatabase", "CreateTestDatabase.sql"));
+        
+    //    // Split the script into individual commands and remove GO statements
+    //    var commands = sqlScript.Split(new[] { "GO" }, StringSplitOptions.RemoveEmptyEntries)
+    //                           .Select(cmd => cmd.Trim())
+    //                           .Where(cmd => !string.IsNullOrWhiteSpace(cmd));
+        
+    //    foreach (var command in commands)
+    //    {
+    //        try
+    //        {
+    //            using (var sqlCommand = new SqlCommand(command, connection))
+    //            {
+    //                sqlCommand.ExecuteNonQuery();
+    //            }
+    //        }
+    //        catch (SqlException ex) when (ex.Number == 1801) // Database already exists
+    //        {
+    //            // Skip this error and continue with other commands
+    //            continue;
+    //        }
+    //    }
+    //}
+}
 
 // Ensure database is created and migrations are applied
 using (var scope = app.Services.CreateScope())

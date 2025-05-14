@@ -10,64 +10,118 @@ namespace InsightBridge.API.Controllers;
 [Route("api/[controller]")]
 public class DatabaseConnectionController : ControllerBase
 {
-    private readonly IDatabaseConnectionService _connectionService;
+    private readonly IDatabaseConnectionService _databaseConnectionService;
 
-    public DatabaseConnectionController(IDatabaseConnectionService connectionService)
+    public DatabaseConnectionController(IDatabaseConnectionService databaseConnectionService)
     {
-        _connectionService = connectionService;
+        _databaseConnectionService = databaseConnectionService;
+    }
+
+    [HttpPost("test")]
+    public async Task<IActionResult> TestConnection([FromBody] DatabaseConnection connection)
+    {
+        try
+        {
+            var isValid = await _databaseConnectionService.TestConnectionAsync(connection.ConnectionString);
+            return Ok(new { isValid });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("schema")]
+    public async Task<IActionResult> GetSchema([FromBody] DatabaseConnection connection)
+    {
+        try
+        {
+            var schema = await _databaseConnectionService.GetDatabaseSchemaAsync(connection.ConnectionString);
+            return Ok(schema);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPost]
-    public async Task<ActionResult<DatabaseConnection>> CreateConnection(DatabaseConnection connection)
+    public async Task<IActionResult> CreateConnection([FromBody] DatabaseConnection connection)
     {
-        var result = await _connectionService.CreateConnectionAsync(connection);
-        return CreatedAtAction(nameof(GetConnection), new { id = result.Id }, result);
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<DatabaseConnection>> GetConnection(int id)
-    {
-        var connection = await _connectionService.GetConnectionByIdAsync(id);
-        if (connection == null)
-            return NotFound();
-
-        return connection;
+        try
+        {
+            var result = await _databaseConnectionService.CreateConnectionAsync(connection);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<DatabaseConnection>>> GetAllConnections()
+    public async Task<IActionResult> GetAllConnections()
     {
-        var connections = await _connectionService.GetAllConnectionsAsync();
-        return Ok(connections);
+        try
+        {
+            var connections = await _databaseConnectionService.GetAllConnectionsAsync();
+            return Ok(connections);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetConnectionById(int id)
+    {
+        try
+        {
+            var connection = await _databaseConnectionService.GetConnectionByIdAsync(id);
+            if (connection == null)
+                return NotFound();
+
+            return Ok(connection);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateConnection(int id, DatabaseConnection connection)
+    public async Task<IActionResult> UpdateConnection(int id, [FromBody] DatabaseConnection connection)
     {
-        if (id != connection.Id)
-            return BadRequest();
+        try
+        {
+            connection.Id = id;
+            var result = await _databaseConnectionService.UpdateConnectionAsync(connection);
+            if (!result)
+                return NotFound();
 
-        var success = await _connectionService.UpdateConnectionAsync(connection);
-        if (!success)
-            return NotFound();
-
-        return NoContent();
+            return Ok(connection);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteConnection(int id)
     {
-        var success = await _connectionService.DeleteConnectionAsync(id);
-        if (!success)
-            return NotFound();
+        try
+        {
+            var result = await _databaseConnectionService.DeleteConnectionAsync(id);
+            if (!result)
+                return NotFound();
 
-        return NoContent();
-    }
-
-    [HttpPost("test")]
-    public async Task<ActionResult<bool>> TestConnection([FromBody] string connectionString)
-    {
-        var result = await _connectionService.TestConnectionAsync(connectionString);
-        return Ok(result);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 } 
