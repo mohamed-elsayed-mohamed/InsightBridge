@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore backend/InsightBridge.sln
+      
+    - name: Build
+      run: dotnet build backend/InsightBridge.sln --no-restore
+      
+    - name: Test
+      run: dotnet test backend/InsightBridge.sln --no-build --verbosity normal
+      
+    - name: Build and push Docker image
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend
+        push: true
+        tags: insightbridge/api:latest 

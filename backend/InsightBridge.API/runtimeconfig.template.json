@@ -1,0 +1,5 @@
+{
+  "configProperties": {
+    "System.Globalization.InvariantGlobalization": false
+  }
+} 
