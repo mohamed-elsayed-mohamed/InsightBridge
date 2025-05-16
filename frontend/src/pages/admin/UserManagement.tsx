@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { authService } from '../../services/authService';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useApi } from '../../hooks/useApi';
 
 interface User {
     id: string;
@@ -9,99 +9,231 @@ interface User {
     roles: string[];
 }
 
-const UserManagement: React.FC = () => {
+export const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [newUser, setNewUser] = useState({
+        email: '',
+        password: '',
+        firstName: '',
+        lastName: '',
+        role: 'User'
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const api = useApi();
+
+    const loadUsers = useCallback(async () => {
+        try {
+            const response = await api.get<User[]>('/api/auth/users');
+            setUsers(response.data);
+        } catch (err) {
+            console.error('Error loading users:', err);
+            setError('Failed to load users');
+        }
+    }, [api]);
 
     useEffect(() => {
         loadUsers();
-    }, []);
+    }, [loadUsers]);
 
-    const loadUsers = async () => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setNewUser(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleCreateUser = async () => {
         try {
-            const data = await authService.getAllUsers();
-            setUsers(data);
-        } catch (err) {
-            setError('Failed to load users');
+            setLoading(true);
+            setError(null);
+
+            // Create user first
+            const registerData = {
+                email: newUser.email,
+                password: newUser.password,
+                firstName: newUser.firstName,
+                lastName: newUser.lastName
+            };
+
+            await api.post('/api/auth/register', registerData);
+            
+            // Then update their role if needed
+            if (newUser.role !== 'User') {
+                const users = await api.get<User[]>('/api/auth/users');
+                const createdUser = users.data.find(u => u.email === newUser.email);
+                if (createdUser) {
+                    await api.put(`/api/auth/users/${createdUser.id}/roles`, [newUser.role]);
+                }
+            }
+
+            await loadUsers();
+            setNewUser({
+                email: '',
+                password: '',
+                firstName: '',
+                lastName: '',
+                role: 'User'
+            });
+        } catch (err: any) {
+            console.error('Error creating user:', err);
+            setError(err?.response?.data?.message || 'Failed to create user');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleRoleChange = async (userId: string, roles: string[]) => {
+    const handleDeleteUser = async (userId: string) => {
         try {
-            await authService.updateUserRoles(userId, roles);
-            setSuccess('User roles updated successfully');
-            loadUsers();
+            setLoading(true);
+            setError(null);
+            await api.delete(`/api/auth/users/${userId}`);
+            await loadUsers();
         } catch (err) {
-            setError('Failed to update user roles');
+            console.error('Error deleting user:', err);
+            setError('Failed to delete user');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateRole = async (userId: string, newRole: string) => {
+        try {
+            setLoading(true);
+            setError(null);
+            await api.put(`/api/auth/users/${userId}/roles`, [newRole]);
+            await loadUsers();
+        } catch (err) {
+            console.error('Error updating user role:', err);
+            setError('Failed to update user role');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-            <div className="relative py-3 sm:max-w-xl sm:mx-auto">
-                <div className="relative px-4 py-10 bg-white mx-8 md:mx-0 shadow rounded-3xl sm:p-10">
-                    <div className="max-w-md mx-auto">
-                        <div className="divide-y divide-gray-200">
-                            <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                                <h2 className="text-2xl font-bold mb-8">User Management</h2>
-                                
-                                {error && (
-                                    <div className="rounded-md bg-red-50 p-4 mb-4">
-                                        <div className="text-sm text-red-700">{error}</div>
-                                    </div>
-                                )}
-                                
-                                {success && (
-                                    <div className="rounded-md bg-green-50 p-4 mb-4">
-                                        <div className="text-sm text-green-700">{success}</div>
-                                    </div>
-                                )}
+        <div>
+            <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                <h2 className="text-xl font-semibold mb-4">Add New User</h2>
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        {error}
+                    </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={newUser.email}
+                            onChange={handleInputChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        />
+                    </div>
 
-                                <div className="space-y-4">
-                                    {users.map((user) => (
-                                        <div key={user.id} className="border rounded-lg p-4">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <div>
-                                                    <h3 className="text-lg font-medium">
-                                                        {user.firstName} {user.lastName}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-500">{user.email}</p>
-                                                </div>
-                                            </div>
-                                            <div className="mt-2">
-                                                <label className="block text-sm font-medium text-gray-700">
-                                                    Roles
-                                                </label>
-                                                <div className="mt-1 space-y-2">
-                                                    {['Admin', 'Analyst', 'Viewer'].map((role) => (
-                                                        <label key={role} className="inline-flex items-center mr-4">
-                                                            <input
-                                                                type="checkbox"
-                                                                className="form-checkbox h-4 w-4 text-indigo-600"
-                                                                checked={user.roles.includes(role)}
-                                                                onChange={(e) => {
-                                                                    const newRoles = e.target.checked
-                                                                        ? [...user.roles, role]
-                                                                        : user.roles.filter((r) => r !== role);
-                                                                    handleRoleChange(user.id, newRoles);
-                                                                }}
-                                                            />
-                                                            <span className="ml-2 text-sm text-gray-700">{role}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                            First Name
+                        </label>
+                        <input
+                            type="text"
+                            name="firstName"
+                            value={newUser.firstName}
+                            onChange={handleInputChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                            Last Name
+                        </label>
+                        <input
+                            type="text"
+                            name="lastName"
+                            value={newUser.lastName}
+                            onChange={handleInputChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                            Password
+                        </label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={newUser.password}
+                            onChange={handleInputChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                            Role
+                        </label>
+                        <select
+                            name="role"
+                            value={newUser.role}
+                            onChange={handleInputChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        >
+                            <option value="User">User</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="flex justify-end mt-4">
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        onClick={handleCreateUser}
+                        disabled={loading}
+                    >
+                        Create User
+                    </button>
+                </div>
+            </div>
+
+            <div className="bg-white shadow-md rounded px-8 pt-6 pb-8">
+                <h2 className="text-xl font-semibold mb-4">Existing Users</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {users.map(user => (
+                        <div key={user.id} className="border rounded p-4">
+                            <h3 className="font-semibold mb-2">{user.firstName} {user.lastName}</h3>
+                            <p className="text-sm text-gray-600 mb-2">
+                                Email: {user.email}
+                            </p>
+                            <p className="text-sm text-gray-600 mb-2">
+                                Roles: {user.roles.join(', ')}
+                            </p>
+                            <div className="flex justify-between items-center">
+                                <select
+                                    value={user.roles[0]}
+                                    onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                                    className="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+                                >
+                                    <option value="User">User</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                                <button
+                                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm"
+                                    onClick={() => handleDeleteUser(user.id)}
+                                    disabled={loading}
+                                >
+                                    Delete
+                                </button>
                             </div>
                         </div>
-                    </div>
+                    ))}
                 </div>
             </div>
         </div>
     );
-};
-
-export default UserManagement; 
+}; 

@@ -102,12 +102,22 @@ class AuthService {
 
     hasRole(role: string): boolean {
         const token = this.getToken();
-        if (!token) return false;
+        if (!token) {
+            console.log('No token found');
+            return false;
+        }
 
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload.role === role;
-        } catch {
+            console.log('Token payload:', payload);
+            // Check for roles in the 'role' claim (which is an array in the JWT)
+            const roles = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+            console.log('Token roles:', roles);
+            const hasRole = Array.isArray(roles) ? roles.includes(role) : roles === role;
+            console.log(`Has role ${role}?`, hasRole);
+            return hasRole;
+        } catch (error) {
+            console.error('Error parsing token:', error);
             return false;
         }
     }
