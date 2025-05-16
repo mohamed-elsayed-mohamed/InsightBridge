@@ -3,7 +3,7 @@ import GridLayout, { Layout } from 'react-grid-layout';
 import {
   Box, Typography, Paper, TextField, Button, MenuItem, CircularProgress, Alert, IconButton, Stack, Divider, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions,
   Card, CardContent, CardHeader, CardActions, Chip, useTheme, alpha, Fade, Zoom, Collapse, FormControl, InputLabel, Select, FormControlLabel, Checkbox, Grid,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, FormLabel
 } from '@mui/material';
 import { Bar, Line, Pie, Scatter, Bubble, Radar, Doughnut, PolarArea } from 'react-chartjs-2';
 import {
@@ -21,6 +21,7 @@ import {
   Decimation
 } from 'chart.js';
 import { useApi } from '../hooks/useApi';
+import { DatabaseConnection } from '../services/dbService';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
@@ -66,12 +67,6 @@ interface ChartConfig {
   columns?: string[];
   seriesColors?: string[];
   valueColumns?: string[];
-}
-
-interface DatabaseConnection {
-  databaseConnectionId: number;
-  name: string;
-  databaseType: string;
 }
 
 // Add new interface for column selection
@@ -127,6 +122,29 @@ interface ExportOptions {
   freezeHeader?: boolean;
   includeSummary?: boolean;
 }
+
+// Add these interfaces near the top with other interfaces
+interface ScheduleOptions {
+  frequency: 'once' | 'daily' | 'weekly' | 'monthly';
+  timezone: string;
+  endDate?: string;
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+}
+
+// Add this constant near other constants
+const timezones = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+  { value: 'Europe/London', label: 'London (GMT)' },
+  { value: 'Europe/Paris', label: 'Central European Time (CET)' },
+  { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+  { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+];
 
 // Constants
 const chartTypeMap = {
@@ -681,7 +699,7 @@ const ChartControls = React.memo(({
         select
         fullWidth
         label="Database Connection"
-        value={selectedConnection?.databaseConnectionId.toString() || ''}
+        value={selectedConnection?.databaseConnectionId?.toString() || ''}
         onChange={(e) => onConnectionChange(e.target.value)}
         size="small"
       >
@@ -689,7 +707,10 @@ const ChartControls = React.memo(({
           <em>Select a connection</em>
         </MenuItem>
         {connections.map((connection) => (
-          <MenuItem key={connection.databaseConnectionId} value={connection.databaseConnectionId.toString()}>
+          <MenuItem 
+            key={connection.databaseConnectionId || connection.name} 
+            value={connection.databaseConnectionId?.toString() || ''}
+          >
             {connection.name} ({connection.databaseType})
           </MenuItem>
         ))}
@@ -2088,7 +2109,7 @@ const ChartWidget = React.memo(({
 
   // Memoize handlers
   const handleConnectionChange = useCallback((connectionId: string) => {
-    const connection = connections.find(c => c.databaseConnectionId.toString() === connectionId);
+    const connection = connections.find(c => c.databaseConnectionId?.toString() === connectionId);
     setSelectedConnection(connection || null);
     onChange({ connectionString: connectionId });
   }, [connections, onChange]);
@@ -2217,7 +2238,7 @@ const ChartWidget = React.memo(({
         const response = await api.get<DatabaseConnection[]>('/api/UserPermission/my-connections');
         setConnections(response.data);
         if (connectionString) {
-          const connection = response.data.find(c => c.databaseConnectionId.toString() === connectionString);
+          const connection = response.data.find(c => c.databaseConnectionId?.toString() === connectionString);
           if (connection) {
             setSelectedConnection(connection);
           }
@@ -2267,7 +2288,7 @@ const ChartWidget = React.memo(({
     try {
       const res = await api.post('/api/visualization/visualize', {
         query: '',
-        databaseConnectionId: parseInt(selectedConnection.databaseConnectionId.toString()),
+        databaseConnectionId: selectedConnection?.databaseConnectionId ? parseInt(selectedConnection.databaseConnectionId.toString()) : undefined,
         aiPrompt: aiPrompt,
       });
 
@@ -2319,7 +2340,7 @@ const ChartWidget = React.memo(({
     try {
       const res = await api.post('/api/visualization/visualize', {
         query: localQuery,
-        databaseConnectionId: parseInt(selectedConnection.databaseConnectionId.toString()),
+        databaseConnectionId: selectedConnection?.databaseConnectionId ? parseInt(selectedConnection.databaseConnectionId.toString()) : undefined,
         aiPrompt: '',
       });
 
@@ -2374,7 +2395,7 @@ const ChartWidget = React.memo(({
     }
 
     try {
-      if (format === 'pdf') {
+    if (format === 'pdf') {
         const exportHtml = generatePreviewHtml(chartRef, exportOptions, exportTitle, exportDescription, type, data);
         
         if (exportOptions.sendViaEmail) {
@@ -2399,7 +2420,7 @@ const ChartWidget = React.memo(({
           } else {
             throw new Error(emailResponse.data.message || 'Failed to send email');
           }
-        } else {
+    } else {
           // Download PDF
           const res = await api.post('/api/export/pdf', { 
             Html: exportHtml,
@@ -2419,7 +2440,7 @@ const ChartWidget = React.memo(({
         }
       } else {
         // Excel export with enhanced options
-        const excelData = data.map((row: any) => columns.map(col => row[col]));
+      const excelData = data.map((row: any) => columns.map(col => row[col]));
         
         // Get chart image if available
         let chartImage = null;
@@ -2773,11 +2794,33 @@ const DashboardPage: React.FC = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [exportHistory, setExportHistory] = useState<any[]>([]);
-  const [scheduleConnectionString, setScheduleConnectionString] = useState('');
+  const [scheduleDatabaseConnectionId, setScheduleDatabaseConnectionId] = useState(0);
   const [scheduleSqlQuery, setScheduleSqlQuery] = useState('');
   const [scheduleEmail, setScheduleEmail] = useState('');
   const [scheduleDateTime, setScheduleDateTime] = useState('');
+  const [connections, setConnections] = useState<DatabaseConnection[]>([]);
   const api = useApi();
+  const [scheduleOptions, setScheduleOptions] = useState<ScheduleOptions>({
+    frequency: 'once',
+    timezone: 'UTC',
+  });
+  const [scheduleEndDate, setScheduleEndDate] = useState<string>('');
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [dayOfMonth, setDayOfMonth] = useState<number>(1);
+
+  // Load connections
+  useEffect(() => {
+    const loadConnections = async () => {
+      try {
+        const response = await api.get<DatabaseConnection[]>('/api/UserPermission/my-connections');
+        setConnections(response.data);
+      } catch (err) {
+        console.error('Error loading connections:', err);
+        setError('Failed to load database connections');
+      }
+    };
+    loadConnections();
+  }, [api]);
 
   const handleAddChart = () => {
     const id = `chart${charts.length + 1}`;
@@ -2867,7 +2910,7 @@ const DashboardPage: React.FC = () => {
 
   const handleSchedule = () => {
     const chart = charts[0];
-    setScheduleConnectionString(chart?.connectionString || '');
+    setScheduleDatabaseConnectionId(parseInt(chart?.connectionString || '0'));
     setScheduleSqlQuery(chart?.query || '');
     setScheduleEmail('');
     setScheduleDateTime('');
@@ -2876,19 +2919,32 @@ const DashboardPage: React.FC = () => {
 
   const handleScheduleConfirm = async () => {
     setScheduleDialogOpen(false);
-    if (!scheduleConnectionString || !scheduleSqlQuery || !scheduleEmail || !scheduleDateTime) {
-      alert('Please fill in all schedule fields.');
+    if (!scheduleDatabaseConnectionId || !scheduleSqlQuery || !scheduleEmail || !scheduleDateTime) {
+      alert('Please fill in all required fields.');
       return;
     }
+
+    if (scheduleOptions.frequency === 'weekly' && selectedDays.length === 0) {
+      alert('Please select at least one day of the week.');
+      return;
+    }
+
     try {
-      await api.post('/api/schedule', {
-        connectionString: scheduleConnectionString,
+      const scheduleData = {
+        databaseConnectionId: scheduleDatabaseConnectionId,
         sqlQuery: scheduleSqlQuery,
         format: exportFormat,
         scheduledTimeUtc: scheduleDateTime,
         email: scheduleEmail,
-      });
-      alert('Report scheduled! You will receive an email at the scheduled time.');
+        frequency: scheduleOptions.frequency,
+        timezone: scheduleOptions.timezone,
+        endDate: scheduleEndDate || undefined,
+        daysOfWeek: scheduleOptions.frequency === 'weekly' ? selectedDays : undefined,
+        dayOfMonth: scheduleOptions.frequency === 'monthly' ? dayOfMonth : undefined
+      };
+
+      await api.post('/api/schedule/schedule', scheduleData);
+      alert('Report scheduled successfully! You will receive an email at the scheduled time.');
     } catch (err: any) {
       alert('Failed to schedule report: ' + (err?.response?.data?.error || err.message));
     }
@@ -3056,57 +3112,178 @@ const DashboardPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={scheduleDialogOpen} onClose={() => setScheduleDialogOpen(false)}>
+      <Dialog open={scheduleDialogOpen} onClose={() => setScheduleDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Schedule Report</DialogTitle>
         <DialogContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
           <TextField 
             select 
             label="Format" 
             value={exportFormat} 
             onChange={e => setExportFormat(e.target.value as 'pdf' | 'excel')} 
-            sx={{ mt: 2, minWidth: 120 }} 
             fullWidth
           >
             <MenuItem value="pdf">PDF</MenuItem>
             <MenuItem value="excel">Excel</MenuItem>
           </TextField>
+            </Grid>
+
+            <Grid item xs={12}>
           <TextField
-            label="Database Connection String"
-            value={scheduleConnectionString}
-            onChange={e => setScheduleConnectionString(e.target.value)}
-            sx={{ mt: 2 }}
+                select
+                label="Database Connection"
+            value={scheduleDatabaseConnectionId}
+            onChange={e => setScheduleDatabaseConnectionId(Number(e.target.value))}
             fullWidth
-          />
+              >
+                <MenuItem value="">
+                  <em>Select a connection</em>
+                </MenuItem>
+                {(connections as DatabaseConnection[]).map((connection) => (
+                  <MenuItem 
+                    key={connection.databaseConnectionId || connection.name} 
+                    value={connection.databaseConnectionId?.toString() || ''}
+                  >
+                    {connection.name} ({connection.databaseType})
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12}>
           <TextField
             label="SQL Query"
             value={scheduleSqlQuery}
             onChange={e => setScheduleSqlQuery(e.target.value)}
-            sx={{ mt: 2 }}
             fullWidth
             multiline
             rows={2}
           />
+            </Grid>
+
+            <Grid item xs={12}>
           <TextField
             label="Recipient Email"
             value={scheduleEmail}
             onChange={e => setScheduleEmail(e.target.value)}
-            sx={{ mt: 2 }}
             fullWidth
             type="email"
           />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
           <TextField
-            label="Schedule Date & Time (UTC)"
+                select
+                label="Schedule Frequency"
+                value={scheduleOptions.frequency}
+                onChange={e => setScheduleOptions(prev => ({ ...prev, frequency: e.target.value as ScheduleOptions['frequency'] }))}
+                fullWidth
+              >
+                <MenuItem value="once">Once</MenuItem>
+                <MenuItem value="daily">Daily</MenuItem>
+                <MenuItem value="weekly">Weekly</MenuItem>
+                <MenuItem value="monthly">Monthly</MenuItem>
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                select
+                label="Timezone"
+                value={scheduleOptions.timezone}
+                onChange={e => setScheduleOptions(prev => ({ ...prev, timezone: e.target.value }))}
+                fullWidth
+              >
+                {timezones.map(tz => (
+                  <MenuItem key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                label="Start Date & Time"
             type="datetime-local"
             value={scheduleDateTime}
             onChange={e => setScheduleDateTime(e.target.value)}
-            sx={{ mt: 2 }}
             fullWidth
             InputLabelProps={{ shrink: true }}
           />
+            </Grid>
+
+            {scheduleOptions.frequency !== 'once' && (
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="End Date"
+                  type="date"
+                  value={scheduleEndDate}
+                  onChange={e => setScheduleEndDate(e.target.value)}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+            )}
+
+            {scheduleOptions.frequency === 'weekly' && (
+              <Grid item xs={12}>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend">Days of Week</FormLabel>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                      <FormControlLabel
+                        key={day}
+                        control={
+                          <Checkbox
+                            checked={selectedDays.includes(index)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDays([...selectedDays, index]);
+                              } else {
+                                setSelectedDays(selectedDays.filter(d => d !== index));
+                              }
+                            }}
+                          />
+                        }
+                        label={day}
+                      />
+                    ))}
+                  </Box>
+                </FormControl>
+              </Grid>
+            )}
+
+            {scheduleOptions.frequency === 'monthly' && (
+              <Grid item xs={12}>
+                <TextField
+                  select
+                  label="Day of Month"
+                  value={dayOfMonth}
+                  onChange={e => setDayOfMonth(Number(e.target.value))}
+                  fullWidth
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                    <MenuItem key={day} value={day}>
+                      {day}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
+          </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setScheduleDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleScheduleConfirm} variant="contained">Schedule</Button>
+          <Button 
+            onClick={handleScheduleConfirm} 
+            variant="contained"
+            disabled={!scheduleDatabaseConnectionId || !scheduleSqlQuery || !scheduleEmail || !scheduleDateTime || 
+                     (scheduleOptions.frequency === 'weekly' && selectedDays.length === 0)}
+          >
+            Schedule
+          </Button>
         </DialogActions>
       </Dialog>
 

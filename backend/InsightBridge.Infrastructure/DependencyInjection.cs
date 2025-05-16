@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using InsightBridge.Infrastructure.Data;
+using InsightBridge.Application.Interfaces;
+using InsightBridge.Infrastructure.Services;
 
 namespace InsightBridge.Infrastructure;
 
@@ -14,6 +16,16 @@ public static class DependencyInjection
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+
+        return services;
+    }
+
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    {
+        services.AddScoped<IDatabaseConnectionService, DatabaseConnectionService>();
+        services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<ScheduledReportService>();
+        services.AddScoped<IUserPermissionService, UserPermissionService>();
 
         return services;
     }

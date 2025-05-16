@@ -5,23 +5,92 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Data.SqlClient;
 using ClosedXML.Excel;
 using System.Data;
-using System.Net.Mail;
-using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Kernel.Colors;
+using iText.Layout.Properties;
+using iText.IO.Font.Constants;
+using iText.Kernel.Font;
+using iText.Kernel.Pdf.Canvas.Draw;
+using iText.Layout.Borders;
+using System.Collections.Generic;
 
 namespace InsightBridge.Infrastructure.Services
 {
     public class ScheduledReportService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        public ScheduledReportService(IServiceProvider serviceProvider)
+        private readonly IEmailService _emailService;
+
+        public ScheduledReportService(IServiceProvider serviceProvider, IEmailService emailService)
         {
             _serviceProvider = serviceProvider;
+            _emailService = emailService;
+        }
+
+        private byte[] GeneratePdf(DataTable data)
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                using (var writer = new PdfWriter(tempFile))
+                using (var pdf = new PdfDocument(writer))
+                using (var document = new Document(pdf))
+                {
+                    // Add title
+                    document.Add(new Paragraph($"Report Generated on {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC"));
+
+                    // Create table
+                    var table = new Table(data.Columns.Count);
+
+                    // Add headers
+                    foreach (DataColumn column in data.Columns)
+                    {
+                        table.AddHeaderCell(new Cell().Add(new Paragraph(column.ColumnName)));
+                    }
+
+                    // Add data
+                    foreach (DataRow row in data.Rows)
+                    {
+                        foreach (var item in row.ItemArray)
+                        {
+                            table.AddCell(new Cell().Add(new Paragraph(item?.ToString() ?? string.Empty)));
+                        }
+                    }
+
+                    document.Add(table);
+                }
+
+                // Read the generated PDF file into memory
+                return File.ReadAllBytes(tempFile);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"PDF Generation failed at step: {ex.Message}", ex);
+            }
+            finally
+            {
+                // Clean up the temporary file
+                if (File.Exists(tempFile))
+                {
+                    try
+                    {
+                        File.Delete(tempFile);
+                    }
+                    catch
+                    {
+                        // Ignore cleanup errors
+                    }
+                }
+            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -32,88 +101,120 @@ namespace InsightBridge.Infrastructure.Services
                 {
                     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     var now = DateTime.UtcNow;
-                    var dueReports = db.ScheduledReports.Where(r => r.Status == "Scheduled" && r.ScheduledTimeUtc <= now).ToList();
+
+                    // Get reports that are due to run
+                    var dueReports = await db.ScheduledReports
+                        .Include(r => r.DatabaseConnection)
+                        .Where(r => r.Status == "Scheduled" && 
+                            (r.NextRunTime <= now || r.ScheduledTimeUtc <= now))
+                        .ToListAsync(stoppingToken);
+
                     foreach (var report in dueReports)
                     {
                         try
                         {
-                            // Run SQL
-                            var dt = new DataTable();
-                            using (var conn = new SqlConnection(report.ConnectionString))
+                            if (report.DatabaseConnection == null)
                             {
-                                conn.Open();
-                                using (var cmd = new SqlCommand(report.SqlQuery, conn))
-                                using (var reader = cmd.ExecuteReader())
-                                {
-                                    dt.Load(reader);
-                                }
+                                throw new Exception("Database connection not found");
                             }
-                            // Export
+
+                            // Execute the SQL query
+                            using var connection = new SqlConnection(report.DatabaseConnection.ConnectionString);
+                            await connection.OpenAsync(stoppingToken);
+                            using var command = new SqlCommand(report.SqlQuery, connection);
+                            
+                            // Load data into DataTable
+                            var dataTable = new DataTable();
+                            using var reader = await command.ExecuteReaderAsync(stoppingToken);
+                            dataTable.Load(reader);
+                            
                             byte[] fileBytes;
                             string fileName;
                             string mimeType;
-                            if (report.Format == "excel")
+
+                            if (report.Format.ToLower() == "pdf")
                             {
-                                using var wb = new XLWorkbook();
-                                var ws = wb.Worksheets.Add("Report");
-                                for (int col = 0; col < dt.Columns.Count; col++)
-                                    ws.Cell(1, col + 1).Value = dt.Columns[col].ColumnName;
-                                for (int row = 0; row < dt.Rows.Count; row++)
-                                    for (int col = 0; col < dt.Columns.Count; col++)
-                                        ws.Cell(row + 2, col + 1).Value = dt.Rows[row][col]?.ToString() ?? "";
+                                try
+                                {
+                                    fileBytes = GeneratePdf(dataTable);
+                                    fileName = $"report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
+                                    mimeType = "application/pdf";
+                                }
+                                catch (Exception pdfEx)
+                                {
+                                    throw new Exception($"PDF Generation Error: {pdfEx.Message}", pdfEx);
+                                }
+                            }
+                            else
+                            {
+                                // Generate Excel
+                                using var workbook = new XLWorkbook();
+                                var worksheet = workbook.Worksheets.Add("Report");
+                                
+                                // Add headers
+                                for (int i = 0; i < dataTable.Columns.Count; i++)
+                                {
+                                    worksheet.Cell(1, i + 1).Value = dataTable.Columns[i].ColumnName;
+                                }
+
+                                // Add data
+                                for (int row = 0; row < dataTable.Rows.Count; row++)
+                                {
+                                    for (int col = 0; col < dataTable.Columns.Count; col++)
+                                    {
+                                        worksheet.Cell(row + 2, col + 1).Value = dataTable.Rows[row][col].ToString();
+                                    }
+                                }
+
                                 using var ms = new MemoryStream();
-                                wb.SaveAs(ms);
+                                workbook.SaveAs(ms);
+                                ms.Position = 0;
                                 fileBytes = ms.ToArray();
-                                fileName = $"ScheduledReport_{report.Id}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
+                                fileName = $"report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
                                 mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
                             }
-                            else // PDF (send as HTML table in email for simplicity)
-                            {
-                                var sb = new StringBuilder();
-                                sb.Append("<table border='1'><tr>");
-                                foreach (DataColumn col in dt.Columns)
-                                    sb.Append($"<th>{col.ColumnName}</th>");
-                                sb.Append("</tr>");
-                                foreach (DataRow row in dt.Rows)
-                                {
-                                    sb.Append("<tr>");
-                                    foreach (DataColumn col in dt.Columns)
-                                        sb.Append($"<td>{row[col]}</td>");
-                                    sb.Append("</tr>");
-                                }
-                                sb.Append("</table>");
-                                fileBytes = Encoding.UTF8.GetBytes(sb.ToString());
-                                fileName = $"ScheduledReport_{report.Id}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.html";
-                                mimeType = "text/html";
-                            }
+
                             // Send email
-                            var mail = new MailMessage("m.elsayed.m.1995@gmail.com", report.Email)
+                            await _emailService.SendEmailAsync(
+                                report.Email,
+                                "Your Scheduled Report",
+                                "Please find your scheduled report attached.",
+                                fileBytes,
+                                fileName,
+                                mimeType
+                            );
+
+                            // Update report status and calculate next run time
+                            report.LastRunTime = now;
+                            report.CalculateNextRunTime();
+
+                            if (report.NextRunTime == null)
                             {
-                                Subject = "Your Scheduled Report",
-                                Body = "See attached report.",
-                                IsBodyHtml = true
-                            };
-                            mail.Attachments.Add(new Attachment(new MemoryStream(fileBytes), fileName, mimeType));
-                            using var smtp = new SmtpClient("smtp.gmail.com")
+                                report.Status = "Completed";
+                            }
+                            else
                             {
-                                Port = 587,
-                                Credentials = new System.Net.NetworkCredential("m.elsayed.m.1995@gmail.com", "milk vtyx yhti bqaj"),
-                                EnableSsl = true
-                            };
-                            smtp.Send(mail);
-                            // Mark as sent
-                            report.Status = "Sent";
+                                report.Status = "Scheduled";
+                            }
+
                             db.ScheduledReports.Update(report);
-                            db.SaveChanges();
+                            await db.SaveChangesAsync(stoppingToken);
                         }
                         catch (Exception ex)
                         {
-                            report.Status = "Error: " + ex.Message;
+                            var errorMessage = $"Error: {ex.Message}";
+                            if (ex.InnerException != null)
+                            {
+                                errorMessage += $" Inner Error: {ex.InnerException.Message}";
+                            }
+                            report.Status = errorMessage;
                             db.ScheduledReports.Update(report);
-                            db.SaveChanges();
+                            await db.SaveChangesAsync(stoppingToken);
                         }
                     }
                 }
+
+                // Wait for 1 minute before checking again
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }

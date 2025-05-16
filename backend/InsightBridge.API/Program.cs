@@ -146,6 +146,10 @@ builder.Services.AddApplicationServices();
 
 // Add Infrastructure Services
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddInfrastructure();
+
+// Register EmailService as singleton
+builder.Services.AddSingleton<IEmailService, EmailService>();
 
 // Add ScheduledReportService as a hosted service
 builder.Services.AddHostedService<InsightBridge.Infrastructure.Services.ScheduledReportService>();
@@ -153,6 +157,9 @@ builder.Services.AddHostedService<InsightBridge.Infrastructure.Services.Schedule
 // Add Bot Framework adapter and TeamsSqlBot
 builder.Services.AddSingleton<IBotFrameworkHttpAdapter, BotFrameworkHttpAdapter>();
 builder.Services.AddSingleton<IBot, TeamsSqlBot>();
+
+// Add this after other service registrations
+builder.Services.AddScoped<DbSeeder>();
 
 var app = builder.Build();
 
@@ -252,6 +259,13 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(role));
         }
     }
+}
+
+// Add this after app.Build() but before app.Run()
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
+    await seeder.SeedAsync();
 }
 
 app.Run(); 

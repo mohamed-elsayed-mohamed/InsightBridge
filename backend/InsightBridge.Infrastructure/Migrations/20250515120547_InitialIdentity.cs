@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace InsightBridge.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialIdentity : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -73,6 +73,25 @@ namespace InsightBridge.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_DatabaseConnections", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ScheduledReports",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ConnectionString = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SqlQuery = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Format = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ScheduledTimeUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ScheduledReports", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -209,6 +228,38 @@ namespace InsightBridge.Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "UserPermissions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    DatabaseConnectionId = table.Column<int>(type: "int", nullable: false),
+                    AllowedTables = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    AllowedColumns = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LastModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastModifiedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserPermissions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserPermissions_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserPermissions_DatabaseConnections_DatabaseConnectionId",
+                        column: x => x.DatabaseConnectionId,
+                        principalTable: "DatabaseConnections",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -252,6 +303,16 @@ namespace InsightBridge.Infrastructure.Migrations
                 name: "IX_Reports_DatabaseConnectionId",
                 table: "Reports",
                 column: "DatabaseConnectionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserPermissions_DatabaseConnectionId",
+                table: "UserPermissions",
+                column: "DatabaseConnectionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserPermissions_UserId",
+                table: "UserPermissions",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -274,6 +335,12 @@ namespace InsightBridge.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Reports");
+
+            migrationBuilder.DropTable(
+                name: "ScheduledReports");
+
+            migrationBuilder.DropTable(
+                name: "UserPermissions");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export interface DatabaseConnection {
-    id?: number;
+    databaseConnectionId?: number;
     name: string;
     databaseType: string;
     server: string;

@@ -178,7 +178,7 @@ public class AuthService : IAuthService
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.UtcNow.AddHours(Convert.ToDouble(_configuration["JWT:ExpirationInHours"]));
+        var expires = DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["JWT:ExpirationInDays"]));
 
         var token = new JwtSecurityToken(
             _configuration["JWT:ValidIssuer"],

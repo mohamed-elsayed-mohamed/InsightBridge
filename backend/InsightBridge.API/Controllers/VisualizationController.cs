@@ -5,6 +5,8 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using InsightBridge.Application.AI.Interfaces;
 using InsightBridge.Application.AI.Models;
+using InsightBridge.Application.Interfaces;
+using InsightBridge.Domain.Models;
 
 namespace InsightBridge.API.Controllers
 {
@@ -13,16 +15,27 @@ namespace InsightBridge.API.Controllers
     public class VisualizationController : ControllerBase
     {
         private readonly IAIQueryService _aiQueryService;
+        private readonly IDatabaseConnectionService _databaseConnectionService;
         private static object _dashboardConfig = null;
 
-        public VisualizationController(IAIQueryService aiQueryService)
+        public VisualizationController(
+            IAIQueryService aiQueryService,
+            IDatabaseConnectionService databaseConnectionService)
         {
             _aiQueryService = aiQueryService;
+            _databaseConnectionService = databaseConnectionService;
         }
 
         [HttpPost("visualize")]
         public async Task<IActionResult> Visualize([FromBody] VisualizeRequest request)
         {
+            // Get the database connection
+            var connection = await _databaseConnectionService.GetConnectionByIdAsync(request.DatabaseConnectionId);
+            if (connection == null)
+            {
+                return BadRequest(new { error = "Database connection not found" });
+            }
+
             string queryToExecute = request.Query;
             
             // If AI prompt is provided, generate the query
@@ -31,7 +44,7 @@ namespace InsightBridge.API.Controllers
                 try
                 {
                     // Get database schema
-                    string schema = await GetDatabaseSchema(request.ConnectionString);
+                    string schema = await GetDatabaseSchema(connection.ConnectionString);
                     
                     // Generate query using AI
                     var aiResponse = await _aiQueryService.GenerateQueryAsync(request.AiPrompt, schema);
@@ -50,7 +63,7 @@ namespace InsightBridge.API.Controllers
             DataTable resultTable = new DataTable();
             try
             {
-                using var conn = new SqlConnection(request.ConnectionString);
+                using var conn = new SqlConnection(connection.ConnectionString);
                 await conn.OpenAsync();
                 using var cmd = new SqlCommand(queryToExecute, conn);
                 using var reader = await cmd.ExecuteReaderAsync();
@@ -160,7 +173,7 @@ namespace InsightBridge.API.Controllers
         public class VisualizeRequest
         {
             public string Query { get; set; }
-            public string ConnectionString { get; set; }
+            public int DatabaseConnectionId { get; set; }
             public string AiPrompt { get; set; }
         }
     }
