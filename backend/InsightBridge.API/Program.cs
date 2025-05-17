@@ -210,32 +210,46 @@ using (var scope = app.Services.CreateScope())
     }
 
     // Execute the test database initialization script
-    //using (var connection = new SqlConnection(testDbConnectionString))
-    //{
-    //    connection.Open();
-    //    var sqlScript = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestDatabase", "CreateTestDatabase.sql"));
+    using (var connection = new SqlConnection(testDbConnectionString))
+    {
+        connection.Open();
+        
+        // Extract database name from connection string
+        var connectionStringBuilder = new SqlConnectionStringBuilder(testDbConnectionString);
+        var databaseName = connectionStringBuilder.InitialCatalog;
 
-    //    // Split the script into individual commands and remove GO statements
-    //    var commands = sqlScript.Split(new[] { "GO" }, StringSplitOptions.RemoveEmptyEntries)
-    //                           .Select(cmd => cmd.Trim())
-    //                           .Where(cmd => !string.IsNullOrWhiteSpace(cmd));
+        // Check if database exists
+        var checkDbCommand = new SqlCommand(
+            $"SELECT COUNT(*) FROM sys.databases WHERE name = '{databaseName}'", 
+            connection);
+        var dbExists = (int)checkDbCommand.ExecuteScalar() > 0;
 
-    //    foreach (var command in commands)
-    //    {
-    //        try
-    //        {
-    //            using (var sqlCommand = new SqlCommand(command, connection))
-    //            {
-    //                sqlCommand.ExecuteNonQuery();
-    //            }
-    //        }
-    //        catch (SqlException ex) when (ex.Number == 1801) // Database already exists
-    //        {
-    //            // Skip this error and continue with other commands
-    //            continue;
-    //        }
-    //    }
-    //}
+        if (!dbExists)
+        {
+            var sqlScript = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestDatabase", "CreateTestDatabase.sql"));
+
+            // Split the script into individual commands and remove GO statements
+            var commands = sqlScript.Split(new[] { "GO" }, StringSplitOptions.RemoveEmptyEntries)
+                                .Select(cmd => cmd.Trim())
+                                .Where(cmd => !string.IsNullOrWhiteSpace(cmd));
+
+            foreach (var command in commands)
+            {
+                try
+                {
+                    using (var sqlCommand = new SqlCommand(command, connection))
+                    {
+                        sqlCommand.ExecuteNonQuery();
+                    }
+                }
+                catch (SqlException ex) when (ex.Number == 1801) // Database already exists
+                {
+                    // Skip this error and continue with other commands
+                    continue;
+                }
+            }
+        }
+    }
 }
 
 // Ensure database is created and migrations are applied
