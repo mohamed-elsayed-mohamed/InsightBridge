@@ -1,0 +1,75 @@
+name: Build and Create Installers
+
+on:
+  push:
+    branches: [ clean-branch ]
+  pull_request:
+    branches: [ clean-branch ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '7.0.x'
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+    
+    - name: Restore .NET dependencies
+      run: dotnet restore backend/InsightBridge.API/InsightBridge.API.csproj
+    
+    - name: Build .NET project
+      run: dotnet build backend/InsightBridge.API/InsightBridge.API.csproj --configuration Release --no-restore
+    
+    - name: Publish .NET project
+      run: dotnet publish backend/InsightBridge.API/InsightBridge.API.csproj --configuration Release --output publish/api --no-restore
+    
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm install
+    
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+    
+    - name: Download Inno Setup
+      run: |
+        $url = "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe"
+        $output = "innosetup.exe"
+        Invoke-WebRequest -Uri $url -OutFile $output
+    
+    - name: Install Inno Setup
+      run: |
+        Start-Process -FilePath "innosetup.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES" -Wait
+    
+    - name: Create API Installer
+      run: |
+        cd devops
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup-api.iss
+    
+    - name: Create Web Installer
+      run: |
+        cd devops
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup-web.iss
+    
+    - name: Upload API Installer Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: api-installer
+        path: devops/Output/InsightBridgeAPI.exe
+    
+    - name: Upload Web Installer Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: web-installer
+        path: devops/Output/InsightBridgeWeb.exe 
