@@ -1,6 +1,6 @@
+using InsightBridge.Domain.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using InsightBridge.Domain.Models;
 
 namespace InsightBridge.Infrastructure.Data;
 
@@ -19,7 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         // Configure Report entity
         modelBuilder.Entity<Report>()
             .HasOne(r => r.DatabaseConnection)
@@ -47,4 +47,4 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(up => up.DatabaseConnectionId)
             .OnDelete(DeleteBehavior.Cascade);
     }
-} 
+}

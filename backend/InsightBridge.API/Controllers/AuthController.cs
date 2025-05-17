@@ -1,9 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
-using InsightBridge.Application.Services;
 using InsightBridge.Domain.Models;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc;
 
 namespace InsightBridge.API.Controllers;
 
@@ -126,4 +123,4 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-} 
+}

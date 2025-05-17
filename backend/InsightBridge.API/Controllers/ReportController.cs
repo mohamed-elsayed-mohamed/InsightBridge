@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using InsightBridge.Application.Interfaces;
 using InsightBridge.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace InsightBridge.API.Controllers;
 
@@ -88,4 +88,4 @@ public class ReportController : ControllerBase
             return StatusCode(500, $"Error executing report: {ex.Message}");
         }
     }
-} 
+}

@@ -2320,8 +2320,9 @@ const ChartWidget = React.memo(({
       setLocalQuery(res.data.generatedQuery || localQuery);
       setValueColumns(updates.valueColumns || []);
       setLocalSeriesColors(updates.seriesColors || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || 'An error occurred';
+      setError(errorMessage);
       console.error('Error visualizing data:', err);
     } finally {
       setIsLoading(false);
@@ -2375,8 +2376,9 @@ const ChartWidget = React.memo(({
       setColumns(res.data.columns);
       setValueColumns(updates.valueColumns || []);
       setLocalSeriesColors(updates.seriesColors || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while visualizing the data');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || 'An error occurred while visualizing the data';
+      setError(errorMessage);
       console.error('Error visualizing data:', err);
     } finally {
       setIsLoading(false);
@@ -2784,6 +2786,13 @@ const initialCharts: ChartConfig[] = [
   },
 ];
 
+// Add interface for export history item
+interface ExportHistoryItem {
+  Type: string;
+  FileName: string;
+  Timestamp: string;
+}
+
 const DashboardPage: React.FC = () => {
   const theme = useTheme();
   const [charts, setCharts] = useState<ChartConfig[]>(initialCharts);
@@ -2792,8 +2801,6 @@ const DashboardPage: React.FC = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'excel'>('pdf');
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
-  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [exportHistory, setExportHistory] = useState<any[]>([]);
   const [scheduleDatabaseConnectionId, setScheduleDatabaseConnectionId] = useState(0);
   const [scheduleSqlQuery, setScheduleSqlQuery] = useState('');
   const [scheduleEmail, setScheduleEmail] = useState('');
@@ -2807,6 +2814,9 @@ const DashboardPage: React.FC = () => {
   const [scheduleEndDate, setScheduleEndDate] = useState<string>('');
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [dayOfMonth, setDayOfMonth] = useState<number>(1);
+  // Add state variables for history dialog
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
 
   // Load connections
   useEffect(() => {
@@ -2952,8 +2962,13 @@ const DashboardPage: React.FC = () => {
 
   const handleHistory = async () => {
     setHistoryDialogOpen(true);
-    const res = await api.get('/api/export/history');
-    setExportHistory(res.data);
+    try {
+      const res = await api.get<ExportHistoryItem[]>('/api/export/history');
+      setExportHistory(res.data);
+    } catch (err) {
+      console.error('Error fetching export history:', err);
+      setError('Failed to load export history');
+    }
   };
 
   const layout: Layout[] = charts.map(c => ({ ...c.layout, i: c.id }));
@@ -2997,16 +3012,6 @@ const DashboardPage: React.FC = () => {
                 disabled={loading}
               >
                 Schedule
-              </Button>
-            </Tooltip>
-            <Tooltip title="Export History">
-              <Button 
-                variant="outlined" 
-                startIcon={<HistoryIcon />} 
-                onClick={handleHistory} 
-                disabled={loading}
-              >
-                History
               </Button>
             </Tooltip>
             <Tooltip title="Save Dashboard">
@@ -3294,7 +3299,7 @@ const DashboardPage: React.FC = () => {
             <Typography variant="body2">No export history yet.</Typography>
           ) : (
             <Box>
-              {exportHistory.map((item, idx) => (
+              {exportHistory.map((item: ExportHistoryItem, idx: number) => (
                 <Box key={idx} sx={{ mb: 1 }}>
                   <Typography variant="body2">
                     {item.Type} - {item.FileName} - {new Date(item.Timestamp).toLocaleString()}

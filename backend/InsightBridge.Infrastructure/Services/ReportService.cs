@@ -1,11 +1,11 @@
+using Dapper;
 using InsightBridge.Application.Interfaces;
 using InsightBridge.Domain.Models;
-using Microsoft.EntityFrameworkCore;
 using InsightBridge.Infrastructure.Data;
-using System.Data;
 using Microsoft.Data.SqlClient;
-using Dapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Data;
 
 namespace InsightBridge.Infrastructure.Services;
 
@@ -16,7 +16,7 @@ public class ReportService : IReportService
     private readonly ILogger<ReportService> _logger;
 
     public ReportService(
-        ApplicationDbContext context, 
+        ApplicationDbContext context,
         IDatabaseConnectionService connectionService,
         ILogger<ReportService> logger)
     {
@@ -157,4 +157,4 @@ public class ReportService : IReportService
             throw new ArgumentException($"Invalid query: {ex.Message}");
         }
     }
-} 
+}

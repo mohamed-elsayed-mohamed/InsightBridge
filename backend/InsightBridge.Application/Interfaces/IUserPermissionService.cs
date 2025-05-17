@@ -13,4 +13,4 @@ public interface IUserPermissionService
     Task<bool> HasDatabaseAccessAsync(string userId, int databaseConnectionId);
     Task<bool> HasTableAccessAsync(string userId, int databaseConnectionId, string tableName);
     Task<bool> HasColumnAccessAsync(string userId, int databaseConnectionId, string tableName, string columnName);
-} 
+}

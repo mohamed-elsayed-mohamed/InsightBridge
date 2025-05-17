@@ -11,4 +11,4 @@ public interface IDatabaseConnectionService
     Task<bool> UpdateConnectionAsync(DatabaseConnection connection);
     Task<bool> DeleteConnectionAsync(int id);
     Task<DatabaseSchema> GetDatabaseSchemaAsync(string connectionString);
-} 
+}

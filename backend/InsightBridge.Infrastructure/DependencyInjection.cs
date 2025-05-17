@@ -1,9 +1,9 @@
+using InsightBridge.Application.Interfaces;
+using InsightBridge.Infrastructure.Data;
+using InsightBridge.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using InsightBridge.Infrastructure.Data;
-using InsightBridge.Application.Interfaces;
-using InsightBridge.Infrastructure.Services;
 
 namespace InsightBridge.Infrastructure;
 
@@ -29,4 +29,4 @@ public static class DependencyInjection
 
         return services;
     }
-} 
+}

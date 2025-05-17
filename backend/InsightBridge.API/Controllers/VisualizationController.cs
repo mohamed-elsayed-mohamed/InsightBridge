@@ -1,12 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using System.Data;
-using Microsoft.Data.SqlClient;
-using System.Collections.Concurrent;
-using System.Text.Json;
 using InsightBridge.Application.AI.Interfaces;
-using InsightBridge.Application.AI.Models;
 using InsightBridge.Application.Interfaces;
-using InsightBridge.Domain.Models;
+using InsightBridge.Domain.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Security.Claims;
 
 namespace InsightBridge.API.Controllers
 {
@@ -16,19 +14,29 @@ namespace InsightBridge.API.Controllers
     {
         private readonly IAIQueryService _aiQueryService;
         private readonly IDatabaseConnectionService _databaseConnectionService;
+        private readonly IPermissionService _permissionService;
         private static object _dashboardConfig = null;
 
         public VisualizationController(
             IAIQueryService aiQueryService,
-            IDatabaseConnectionService databaseConnectionService)
+            IDatabaseConnectionService databaseConnectionService,
+            IPermissionService permissionService)
         {
             _aiQueryService = aiQueryService;
             _databaseConnectionService = databaseConnectionService;
+            _permissionService = permissionService;
         }
 
         [HttpPost("visualize")]
         public async Task<IActionResult> Visualize([FromBody] VisualizeRequest request)
         {
+            // Get the current user ID
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User not authenticated" });
+            }
+
             // Get the database connection
             var connection = await _databaseConnectionService.GetConnectionByIdAsync(request.DatabaseConnectionId);
             if (connection == null)
@@ -37,7 +45,7 @@ namespace InsightBridge.API.Controllers
             }
 
             string queryToExecute = request.Query;
-            
+
             // If AI prompt is provided, generate the query
             if (!string.IsNullOrWhiteSpace(request.AiPrompt))
             {
@@ -45,7 +53,7 @@ namespace InsightBridge.API.Controllers
                 {
                     // Get database schema
                     string schema = await GetDatabaseSchema(connection.ConnectionString);
-                    
+
                     // Generate query using AI
                     var aiResponse = await _aiQueryService.GenerateQueryAsync(request.AiPrompt, schema);
                     if (!string.IsNullOrEmpty(aiResponse.SqlQuery))
@@ -57,6 +65,16 @@ namespace InsightBridge.API.Controllers
                 {
                     return BadRequest(new { error = $"AI query generation error: {ex.Message}" });
                 }
+            }
+
+            // Validate user permissions for the query
+            try
+            {
+                await _permissionService.ValidateQueryPermissionsAsync(connection.ConnectionString, userId, queryToExecute);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { error = ex.Message });
             }
 
             // Execute the query
@@ -111,17 +129,17 @@ namespace InsightBridge.API.Controllers
 
                 using var cmd = new SqlCommand(tablesQuery, conn);
                 using var reader = await cmd.ExecuteReaderAsync();
-                
+
                 var currentTable = "";
                 var tableSchema = new List<string>();
-                
+
                 while (await reader.ReadAsync())
                 {
                     var tableName = reader["TableName"].ToString();
                     var columnName = reader["ColumnName"].ToString();
                     var dataType = reader["DataType"].ToString();
                     var isNullable = (bool)reader["IsNullable"];
-                    
+
                     if (tableName != currentTable)
                     {
                         if (currentTable != "")
@@ -131,10 +149,10 @@ namespace InsightBridge.API.Controllers
                         currentTable = tableName;
                         tableSchema.Clear();
                     }
-                    
+
                     tableSchema.Add($"{columnName} ({dataType}{(isNullable ? " NULL" : " NOT NULL")})");
                 }
-                
+
                 if (currentTable != "")
                 {
                     schema.Add($"Table {currentTable}: {string.Join(", ", tableSchema)}");
@@ -144,7 +162,7 @@ namespace InsightBridge.API.Controllers
             {
                 throw new Exception($"Failed to get database schema: {ex.Message}");
             }
-            
+
             return string.Join("\n", schema);
         }
 
@@ -177,4 +195,4 @@ namespace InsightBridge.API.Controllers
             public string AiPrompt { get; set; }
         }
     }
-} 
+}

@@ -1,14 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using InsightBridge.Application.AI.Interfaces;
+using InsightBridge.Application.AI.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using OpenAI.Chat;
-using InsightBridge.Application.AI.Models;
-using InsightBridge.Application.AI.Interfaces;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace InsightBridge.Application.AI.Services
 {

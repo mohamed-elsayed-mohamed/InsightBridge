@@ -1,27 +1,23 @@
-using System.Text;
-using System.Globalization;
+using InsightBridge.API.Middleware;
+using InsightBridge.Application;
+using InsightBridge.Application.AI.Interfaces;
+using InsightBridge.Application.AI.Services;
 using InsightBridge.Application.Interfaces;
-using InsightBridge.Domain.Models;
+using InsightBridge.Domain.Interfaces;
+using InsightBridge.Infrastructure;
+using InsightBridge.Infrastructure.Data;
 using InsightBridge.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Integration.AspNet.Core;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using InsightBridge.Infrastructure.Data;
-using InsightBridge.Infrastructure.Models;
-using InsightBridge.API.Middleware;
-using InsightBridge.Application.Services;
-using InsightBridge.Application;
-using InsightBridge.Infrastructure;
 using Microsoft.OpenApi.Models;
+using System.Globalization;
+using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.DependencyInjection;
-using System.IO;
-using Microsoft.Data.SqlClient;
-using InsightBridge.Application.AI.Interfaces;
-using InsightBridge.Application.AI.Services;
-using Microsoft.Bot.Builder.Integration.AspNet.Core;
-using Microsoft.Bot.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -161,6 +157,10 @@ builder.Services.AddSingleton<IBot, TeamsSqlBot>();
 // Add this after other service registrations
 builder.Services.AddScoped<DbSeeder>();
 
+// Register permission services
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<SecureDatabaseService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -189,11 +189,11 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<ApplicationDbContext>();
-    
+
     // Create TestDatabase if it doesn't exist
     var testDbConnectionString = builder.Configuration.GetConnectionString("TestDatabaseConnection");
     var masterConnectionString = testDbConnectionString.Replace("Database=TestAIDatabase", "Database=master");
-    
+
     using (var connection = new SqlConnection(masterConnectionString))
     {
         connection.Open();
@@ -214,12 +214,12 @@ using (var scope = app.Services.CreateScope())
     //{
     //    connection.Open();
     //    var sqlScript = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestDatabase", "CreateTestDatabase.sql"));
-        
+
     //    // Split the script into individual commands and remove GO statements
     //    var commands = sqlScript.Split(new[] { "GO" }, StringSplitOptions.RemoveEmptyEntries)
     //                           .Select(cmd => cmd.Trim())
     //                           .Where(cmd => !string.IsNullOrWhiteSpace(cmd));
-        
+
     //    foreach (var command in commands)
     //    {
     //        try
@@ -268,4 +268,4 @@ using (var scope = app.Services.CreateScope())
     await seeder.SeedAsync();
 }
 
-app.Run(); 
+app.Run();

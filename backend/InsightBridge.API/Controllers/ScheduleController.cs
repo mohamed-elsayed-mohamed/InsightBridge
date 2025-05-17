@@ -1,9 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
 using InsightBridge.Domain.Models;
 using InsightBridge.Infrastructure.Data;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace InsightBridge.API.Controllers
@@ -22,9 +19,9 @@ namespace InsightBridge.API.Controllers
         [HttpPost("schedule")]
         public async Task<IActionResult> ScheduleReport([FromBody] ScheduledReport report)
         {
-            if (report.DatabaseConnectionId <= 0 || 
-                string.IsNullOrEmpty(report.SqlQuery) || 
-                string.IsNullOrEmpty(report.Format) || 
+            if (report.DatabaseConnectionId <= 0 ||
+                string.IsNullOrEmpty(report.SqlQuery) ||
+                string.IsNullOrEmpty(report.Format) ||
                 string.IsNullOrEmpty(report.Email))
             {
                 return BadRequest("Missing required fields");
@@ -67,7 +64,7 @@ namespace InsightBridge.API.Controllers
             // Convert scheduled time to UTC
             if (report.ScheduledTimeUtc.Kind != DateTimeKind.Utc)
             {
-                report.ScheduledTimeUtc = TimeZoneInfo.ConvertTimeToUtc(report.ScheduledTimeUtc, 
+                report.ScheduledTimeUtc = TimeZoneInfo.ConvertTimeToUtc(report.ScheduledTimeUtc,
                     TimeZoneInfo.FindSystemTimeZoneById(report.Timezone));
             }
 
@@ -78,10 +75,11 @@ namespace InsightBridge.API.Controllers
             _context.ScheduledReports.Add(report);
             await _context.SaveChangesAsync();
 
-            return Ok(new { 
-                id = report.Id, 
+            return Ok(new
+            {
+                id = report.Id,
                 nextRunTime = report.NextRunTime,
-                status = report.Status 
+                status = report.Status
             });
         }
 
@@ -111,4 +109,4 @@ namespace InsightBridge.API.Controllers
             return Ok();
         }
     }
-} 
+}

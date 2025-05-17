@@ -1,8 +1,5 @@
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Schema;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Data;
 using Microsoft.Data.SqlClient;
 using System.Text;
 
@@ -57,4 +54,4 @@ public class TeamsSqlBot : ActivityHandler
             await turnContext.SendActivityAsync(MessageFactory.Text("Send 'run: <SQL>' to execute a query, or 'schedule: ...' to schedule a report."), cancellationToken);
         }
     }
-} 
+}

@@ -45,4 +45,4 @@ public class ErrorHandlingMiddleware
         var json = JsonSerializer.Serialize(response, options);
         await context.Response.WriteAsync(json);
     }
-} 
+}

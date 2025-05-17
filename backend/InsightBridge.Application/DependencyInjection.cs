@@ -1,5 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
 using InsightBridge.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InsightBridge.Application;
 
@@ -10,4 +10,4 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         return services;
     }
-} 
+}

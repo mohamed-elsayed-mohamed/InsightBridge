@@ -2,8 +2,8 @@ using InsightBridge.Application.Interfaces;
 using InsightBridge.Domain.Models;
 using InsightBridge.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace InsightBridge.Infrastructure.Services;
 
@@ -134,7 +134,7 @@ public class UserPermissionService : IUserPermissionService
         try
         {
             var allowedColumns = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(permission.AllowedColumns);
-            return allowedColumns?.TryGetValue(tableName, out var columns) == true && 
+            return allowedColumns?.TryGetValue(tableName, out var columns) == true &&
                    columns?.Contains(columnName) == true;
         }
         catch (Exception ex)
@@ -143,4 +143,4 @@ public class UserPermissionService : IUserPermissionService
             return false;
         }
     }
-} 
+}

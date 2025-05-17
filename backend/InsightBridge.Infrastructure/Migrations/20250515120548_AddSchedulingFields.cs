@@ -84,4 +84,4 @@ namespace InsightBridge.Infrastructure.Migrations
                 table: "ScheduledReports");
         }
     }
-} 
+}

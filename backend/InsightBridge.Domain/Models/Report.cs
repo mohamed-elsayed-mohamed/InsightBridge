@@ -14,4 +14,4 @@ public class Report
     public DatabaseConnection? DatabaseConnection { get; set; }
     public string? Parameters { get; set; }
     public string? Schedule { get; set; }
-} 
+}

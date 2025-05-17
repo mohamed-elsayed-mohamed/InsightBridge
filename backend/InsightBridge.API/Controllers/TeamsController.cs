@@ -1,11 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Text.Json;
 using System.Text;
-using System;
-using System.Collections.Generic;
+using System.Text.Json;
 
 namespace InsightBridge.API.Controllers
 {
@@ -93,4 +88,4 @@ namespace InsightBridge.API.Controllers
             public string Message { get; set; } = string.Empty;
         }
     }
-} 
+}

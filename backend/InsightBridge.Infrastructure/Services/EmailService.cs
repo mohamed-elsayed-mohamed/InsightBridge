@@ -1,14 +1,10 @@
-using System.Net.Mail;
-using System.Net;
+using InsightBridge.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
+using System.Net;
+using System.Net.Mail;
 
 namespace InsightBridge.Infrastructure.Services
 {
-    public interface IEmailService
-    {
-        Task SendEmailAsync(string to, string subject, string body, byte[]? attachment = null, string? attachmentName = null, string? mimeType = null);
-    }
-
     public class EmailService : IEmailService
     {
         private readonly IConfiguration _configuration;
@@ -56,4 +52,4 @@ namespace InsightBridge.Infrastructure.Services
             await smtp.SendMailAsync(mail);
         }
     }
-} 
+}

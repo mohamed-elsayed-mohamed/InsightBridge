@@ -1,8 +1,7 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using InsightBridge.Application.Interfaces;
 using InsightBridge.Domain.Models;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace InsightBridge.API.Controllers
 {
@@ -77,4 +76,4 @@ namespace InsightBridge.API.Controllers
             return Ok(new { success = result });
         }
     }
-} 
+}

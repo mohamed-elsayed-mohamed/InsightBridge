@@ -1,12 +1,11 @@
 using InsightBridge.Application.Interfaces;
 using InsightBridge.Domain.Models;
-using Microsoft.EntityFrameworkCore;
 using InsightBridge.Infrastructure.Data;
-using System.Data;
 using Microsoft.Data.SqlClient;
-using Npgsql;
-using MySql.Data.MySqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MySql.Data.MySqlClient;
+using Npgsql;
 using System.Data.Common;
 
 namespace InsightBridge.Infrastructure.Services;
@@ -71,7 +70,7 @@ public class DatabaseConnectionService : IDatabaseConnectionService
                 await connection.OpenAsync();
                 return true;
             }
-            else if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) && 
+            else if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
                      connectionString.Contains("Database=", StringComparison.OrdinalIgnoreCase))
             {
                 using var connection = new MySqlConnection(connectionString);
@@ -308,7 +307,7 @@ public class DatabaseConnectionService : IDatabaseConnectionService
 
     private DbConnection GetDbConnection(string connectionString)
     {
-        if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) && 
+        if (connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) &&
             !connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase))
         {
             return new SqlConnection(connectionString);
@@ -322,4 +321,4 @@ public class DatabaseConnectionService : IDatabaseConnectionService
             return new MySqlConnection(connectionString);
         }
     }
-} 
+}

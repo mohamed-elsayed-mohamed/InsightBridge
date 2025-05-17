@@ -12,4 +12,4 @@ public class VersionController : ControllerBase
         var version = typeof(VersionController).Assembly.GetName().Version?.ToString() ?? "1.0.0";
         return Ok(new { version });
     }
-} 
+}

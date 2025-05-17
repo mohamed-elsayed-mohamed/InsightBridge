@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
+﻿using InsightBridge.Application.AI.Interfaces;
+using InsightBridge.Application.AI.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using InsightBridge.Application.AI.Models;
-using InsightBridge.Application.AI.Interfaces;
 
 namespace InsightBridge.Application.AI.Services;
 

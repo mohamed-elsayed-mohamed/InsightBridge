@@ -11,4 +11,4 @@ public class DatabaseConnection
     public bool IsActive { get; set; } = true;
     public string? Description { get; set; }
     public string? CreatedBy { get; set; }
-} 
+}

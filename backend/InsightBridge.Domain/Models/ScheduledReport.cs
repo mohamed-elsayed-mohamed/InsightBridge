@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json;
 
 namespace InsightBridge.Domain.Models
@@ -14,7 +13,7 @@ namespace InsightBridge.Domain.Models
         public string Email { get; set; } = string.Empty;
         public string? Status { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        
+
         // New properties for recurring schedules
         public string Frequency { get; set; } = "once"; // once, daily, weekly, monthly
         public string Timezone { get; set; } = "UTC";
@@ -73,12 +72,12 @@ namespace InsightBridge.Domain.Models
 
                 case "monthly":
                     if (!DayOfMonth.HasValue) return;
-                    
+
                     var nextMonth = lastRun.AddMonths(1);
                     var daysInMonth = DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month);
                     var targetDay = Math.Min(DayOfMonth.Value, daysInMonth);
-                    
-                    NextRunTime = new DateTime(nextMonth.Year, nextMonth.Month, targetDay, 
+
+                    NextRunTime = new DateTime(nextMonth.Year, nextMonth.Month, targetDay,
                         lastRun.Hour, lastRun.Minute, lastRun.Second, DateTimeKind.Utc);
                     break;
             }
@@ -90,4 +89,4 @@ namespace InsightBridge.Domain.Models
             }
         }
     }
-} 
+}

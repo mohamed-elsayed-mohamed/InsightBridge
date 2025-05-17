@@ -1,7 +1,7 @@
+using InsightBridge.Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using InsightBridge.Domain.Models;
 
 namespace InsightBridge.Infrastructure.Data;
 
@@ -113,4 +113,4 @@ public class DbSeeder
             _logger.LogError($"Failed to create regular user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
     }
-} 
+}

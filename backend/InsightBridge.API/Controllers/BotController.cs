@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
-using System.Threading.Tasks;
 
 namespace InsightBridge.API.Controllers
 {
@@ -24,4 +23,4 @@ namespace InsightBridge.API.Controllers
             await _adapter.ProcessAsync(Request, Response, _bot);
         }
     }
-} 
+}

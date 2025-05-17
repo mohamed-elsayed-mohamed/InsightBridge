@@ -1,8 +1,6 @@
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using InsightBridge.Application.AI.Interfaces;
 using InsightBridge.Application.AI.Models;
-using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 
 namespace InsightBridge.API.Controllers
 {
@@ -63,4 +61,4 @@ namespace InsightBridge.API.Controllers
         public string Schema { get; set; } = string.Empty;
         public string Clarification { get; set; } = string.Empty;
     }
-} 
+}

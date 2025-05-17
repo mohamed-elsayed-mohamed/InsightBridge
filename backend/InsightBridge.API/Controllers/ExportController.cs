@@ -1,14 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System;
-using System.IO;
-using System.Text;
-using OfficeOpenXml; // For Excel
-using PuppeteerSharp; // For PDF
 using ClosedXML.Excel; // For ClosedXML
-using System.Net.Mail;
+using Microsoft.AspNetCore.Mvc;
+using PuppeteerSharp; // For PDF
 using System.Net;
+using System.Net.Mail;
 
 namespace InsightBridge.API.Controllers
 {
@@ -135,11 +129,12 @@ namespace InsightBridge.API.Controllers
                 await smtp.SendMailAsync(mail);
 
                 // Add to history
-                ExportHistory.Add(new { 
-                    Type = request.Format.ToUpper(), 
-                    Timestamp = DateTime.UtcNow, 
+                ExportHistory.Add(new
+                {
+                    Type = request.Format.ToUpper(),
+                    Timestamp = DateTime.UtcNow,
                     FileName = fileName,
-                    SentTo = request.Email.To 
+                    SentTo = request.Email.To
                 });
 
                 return Ok(new { success = true, message = "Email sent successfully" });
@@ -174,4 +169,4 @@ namespace InsightBridge.API.Controllers
             public string Message { get; set; } = string.Empty;
         }
     }
-} 
+}

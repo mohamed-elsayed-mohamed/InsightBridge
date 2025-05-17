@@ -11,4 +11,4 @@ public interface IReportService
     Task<bool> UpdateReportAsync(Report report);
     Task<bool> DeleteReportAsync(int id);
     Task<object> ExecuteReportAsync(int reportId);
-} 
+}

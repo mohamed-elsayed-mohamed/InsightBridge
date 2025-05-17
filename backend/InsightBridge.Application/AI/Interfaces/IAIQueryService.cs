@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using InsightBridge.Application.AI.Models;
 
 namespace InsightBridge.Application.AI.Interfaces
@@ -8,4 +7,4 @@ namespace InsightBridge.Application.AI.Interfaces
         Task<AIQueryResponse> GenerateQueryAsync(string question, string schema);
         Task<AIQueryResponse> ClarifyQueryAsync(string question, string schema, string clarification);
     }
-} 
+}

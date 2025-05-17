@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using InsightBridge.Application.Interfaces;
 using InsightBridge.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace InsightBridge.API.Controllers;
@@ -201,4 +201,4 @@ public class UserPermissionController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
-} 
+}

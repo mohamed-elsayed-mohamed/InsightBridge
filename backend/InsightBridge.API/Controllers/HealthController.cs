@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using InsightBridge.Infrastructure.Data;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc;
 
 namespace InsightBridge.API.Controllers;
 
@@ -50,4 +48,4 @@ public class HealthController : ControllerBase
         var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0";
         return Ok(new { Version = version });
     }
-} 
+}
