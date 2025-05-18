@@ -36,7 +36,8 @@ jobs:
       run: |
         cd frontend
         npm install
-    
+        npm install file-saver
+
     - name: Build frontend
       run: |
         cd frontend
